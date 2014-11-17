@@ -80,13 +80,11 @@ class Chef
 
           raise 'machine File Hash Is Empty' unless machine_file_hash
           log_info("machine HASH = #{machine_file_hash}")
-          _machine_file_hash = machine_file_hash.clone
-          log_info("_machine_file_hash HASH = #{_machine_file_hash}")
-          stringify_keys(machine_file_hash)
-          strip_hash_nil(machine_file_hash)
 
-          host_for(machine_file_hash['transport_options'])
-          initialize_ssh(machine_file_hash['transport_options'])
+          if machine_file_hash && machine_file_hash['transport_options']
+            host_for(machine_file_hash['transport_options'])
+            initialize_ssh(machine_file_hash['transport_options'])
+          end
 
           machine_updated = create_ssh_machine_file(action_handler,
                                                     machine_spec.name,
