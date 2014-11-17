@@ -53,6 +53,7 @@ class Chef
 
           new_machine = false
           new_machine_options = {}
+          current_machine_options = false
           
           if machine_options[:transport_options]
             new_machine_options['transport_options'] = machine_options[:transport_options]
@@ -65,17 +66,10 @@ class Chef
           elsif machine_options['convergence_options']
             new_machine_options['convergence_options'] = machine_options['convergence_options']
           end
-          #_new_machine_options    = stringify_keys(get_machine_options.dup)
-          #new_machine_options     = strip_hash_nil(_new_machine_options.dup)
-          current_machine_options = false
 
           if machine_spec.location && ssh_machine_exists?(machine_spec.name)
             _current_machine_options = existing_machine_hash(machine_spec)
             current_machine_options  = stringify_keys(_current_machine_options.dup)
-            #   machine_file_hash = updated_ssh_machine_file_hash(new_machine_options,
-            #                                                     current_machine_options)
-            # else
-            #   machine_file_hash = new_machine_options
           end
 
           log_info "new_machine_options #{new_machine_options} current_machine_options #{current_machine_options}"
@@ -480,52 +474,6 @@ class Chef
 
           return use_ssh_options
         end
-
-        # def symbolize_keys(hash)
-        #   hash.inject({}){|result, (key, value)|
-        #     new_key   = case key
-        #     when String
-        #       key.to_sym
-        #     else
-        #       key
-        #     end
-
-        #     new_value = case value
-        #     when Hash
-        #       symbolize_keys(value)
-        #     when String
-        #       value
-        #     else
-        #       value
-        #     end
-
-        #     result[new_key] = new_value
-        #     result
-        #   }
-        # end
-
-        # def stringify_keys(hash)
-        #   hash.inject({}){|result, (key, value)|
-        #     new_key   = case key
-        #     when Symbol
-        #       key.to_s
-        #     else
-        #       key
-        #     end
-
-        #     new_value = case value
-        #     when Hash
-        #       stringify_keys(value)
-        #     when String
-        #       value
-        #     else
-        #       value
-        #     end
-
-        #     result[new_key] = new_value
-        #     result
-        #   }
-        # end
 
       end
     end
