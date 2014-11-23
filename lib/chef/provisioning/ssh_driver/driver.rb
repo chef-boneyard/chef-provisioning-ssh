@@ -40,7 +40,7 @@ class Chef
 
         def self.canonicalize_url(driver_url, config)
           scheme, cluster_path = driver_url.split(':', 2)
-          cluster_path = File.expand_path(cluster_path || File.join(Chef::Config.config_dir, 'metal_ssh'))
+          cluster_path = File.expand_path(cluster_path || File.join(Chef::Config.config_dir, 'provisioning/ssh'))
           "ssh:#{cluster_path}"
         end
 
@@ -72,7 +72,9 @@ class Chef
             current_machine_options  = stringify_keys(_current_machine_options.dup)
           end
 
-          log_info "new_machine_options #{new_machine_options} current_machine_options #{current_machine_options}"
+          log_info "machine_spec.name #{machine_spec.name}"
+
+          log_info "new_machine_options #{new_machine_options} \n\n current_machine_options #{current_machine_options}"
 
 
           machine_file_hash = updated_ssh_machine_file_hash(stringify_keys(new_machine_options),
@@ -89,7 +91,7 @@ class Chef
           machine_updated = create_ssh_machine_file(action_handler,
                                                     machine_spec.name,
                                                     machine_file_hash)
-          machine_options_for(_machine_file_hash)
+          machine_options_for(machine_file_hash)
 
           log_info("STRIPPED machine HASH = #{machine_file_hash}")
           log_info("UNSTRIPPED machine HASH = #{machine_file_hash}")
@@ -176,11 +178,10 @@ class Chef
         end
 
         def existing_machine_hash(machine_spec)
-          return @existing_machine_hash if @existing_machine_hash
-          raise("You Must Pass machine_spec unless @existing_machine_hash exists") unless machine_spec
+          raise("You Must Pass machine_spec unless existing_machine_hash exists") unless machine_spec
           if ssh_machine_exists?(machine_spec.name)
-            @existing_machine_hash = JSON.parse(File.read(existing_ssh_machine_file))
-            return @existing_machine_hash
+            existing_machine_hash = JSON.parse(File.read(existing_ssh_machine_file(machine_spec.name)))
+            existing_machine_hash
             # else
             #   return false
             #   # raise('We have machine_spec.location but have no machine_spec.location["ssh_file_path"]. WTF?')
@@ -205,13 +206,11 @@ class Chef
           ::File.exists?(existing_ssh_machine_file(target_name))
         end
 
-        def existing_ssh_machine_file(target_name = false)
-          return @existing_ssh_machine_file if @existing_ssh_machine_file
-          @existing_ssh_machine_file = ::File.join(@cluster_path, "#{target_name}.json")
-          @existing_ssh_machine_file
+        def existing_ssh_machine_file(target_name)
+          existing_ssh_machine_file = ::File.join(@cluster_path, "#{target_name}.json")
+          existing_ssh_machine_file
         end
 
-        # def ssh_machine_file(action_handler, new_machine_options, current_machine_options, target_name)
         def create_ssh_machine_file(action_handler, target_name, use_machine_options)
           log_info("File is = #{::File.join(@cluster_path, "#{target_name}.json")}")
           log_info("current_machine_options = #{use_machine_options.to_s}")
@@ -255,8 +254,6 @@ class Chef
         end
 
         def updated_transport_options_hash(new_transport_options, current_transport_options = false)
-          # return @updated_transport_options_hash if @updated_transport_options_hash
-          # @updated_transport_options_hash = false
           log_info "updated_transport_options_hash - new_transport_options if #{new_transport_options}"
           current_transport_options = new_transport_options unless current_transport_options
 
@@ -313,11 +310,11 @@ class Chef
 
           merged_transport_options        = Chef::Mixin::DeepMerge.merge(current_transport_options, new_transport_options)
           _merged_transport_options       = merged_transport_options.dup
-          @updated_transport_options_hash = _merged_transport_options.dup
-          @updated_transport_options_hash = Chef::Mixin::DeepMerge.merge(merged_transport_options, new_hash) unless new_hash.empty?
-          ensure_has_keys_or_password(@updated_transport_options_hash)
-          log_info "updated_transport_options_hash = #{@updated_transport_options_hash}"
-          @updated_transport_options_hash
+          updated_transport_options_hash = _merged_transport_options.dup
+          updated_transport_options_hash = Chef::Mixin::DeepMerge.merge(merged_transport_options, new_hash) unless new_hash.empty?
+          ensure_has_keys_or_password(updated_transport_options_hash)
+          log_info "updated_transport_options_hash = #{updated_transport_options_hash}"
+          updated_transport_options_hash
         end
 
         def ensure_has_keys_or_password(transport_hash = false)
@@ -334,7 +331,6 @@ class Chef
         end
 
         def host_for(_transport_options)
-          return @target_host if @target_host
           @target_host  = false
           log_info "_transport_options #{_transport_options}"
           transport_options = stringify_keys(_transport_options)
@@ -384,7 +380,7 @@ class Chef
           _transport_options = symbolize_keys(_transport_options_s.dup)
           log_info "_transport_options is #{_transport_options}"
           ssh_options = _transport_options[:ssh_options]
-          @host = @target_host || _transport_options[:host] || false
+          @host = _transport_options[:host] || false
           @username = ssh_options[:user] rescue false
           @ssh_options_for_transport = ssh_options_for(ssh_options)
 
