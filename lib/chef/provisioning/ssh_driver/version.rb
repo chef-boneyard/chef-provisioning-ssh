@@ -1,7 +1,7 @@
 class Chef
-	module Provisioning
-		module SshDriver
-			VERSION = '0.0.1'
-		end
-	end
+  module Provisioning
+    module SshDriver
+      VERSION = '0.0.2'
+    end
+  end
 end
