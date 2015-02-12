@@ -133,6 +133,8 @@ Then run from the test directory:
 
 `chef-client -z -o vagrant::test_provisioning_ssh`
 
+NOTE: if the second machine fails it will be a result of issues with your vagrant key.
+
 This will run chef-provisioning on each of the two vagrant nodes.
 
 thats it.
