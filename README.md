@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ## Usage
 
-The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. They can be viewed in the code for chef-provisioning here:
+The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. Transport_options can be a string or symbol and will be properly converted. The transport_options can be viewed in the code for chef-provisioning here:
 
 https://github.com/chef/chef-provisioning/blob/master/lib/chef/provisioning/transport/ssh.rb#L17-L34
 
@@ -131,7 +131,7 @@ which will bring up both nodes.
 
 Then run from the test directory:
 
-chef-client -z -o vagrant::test_provisioning_ssh
+`chef-client -z -o vagrant::test_provisioning_ssh`
 
 This will run chef-provisioning on each of the two vagrant nodes.
 
