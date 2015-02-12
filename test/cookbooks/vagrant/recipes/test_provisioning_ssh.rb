@@ -37,7 +37,7 @@ machine "sshtwo" do
     'ip_address' => '192.168.33.23',
     'username' => 'vagrant',
     'ssh_options' => {
-      'keys' => ['/home/js4/.vagrant.d/insecure_private_key']
+      'keys' => ['~/.vagrant.d/insecure_private_key']
     }
   }
   recipe 'vagrant::sshtwo'
