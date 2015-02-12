@@ -1,0 +1,5 @@
+docs/examples/.vagrant
+docs/examples/.chef/provisioning
+docs/examples/nodes
+docs/examples/clients
+docs/examples/.chef/local-mode-cache
