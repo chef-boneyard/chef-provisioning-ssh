@@ -4,7 +4,10 @@ require 'chef/provisioning/driver'
 require 'chef/provisioning/version'
 require 'chef/provisioning/machine/basic_machine'
 require 'chef/provisioning/machine/unix_machine'
+require 'chef/provisioning/machine/windows_machine'
+require 'chef/provisioning/convergence_strategy/install_msi'
 require 'chef/provisioning/convergence_strategy/install_cached'
+require 'chef/provisioning/transport/winrm'
 require 'chef/provisioning/transport/ssh'
 require 'chef/provisioning/ssh_driver/version'
 require 'chef/provisioning/ssh_driver/helpers'
@@ -54,50 +57,9 @@ class Chef
           new_machine = false
           new_machine_options = {}
           current_machine_options = false
-          
-          if machine_options[:transport_options]
-            new_machine_options['transport_options'] = machine_options[:transport_options]
-          elsif machine_options['transport_options']
-            new_machine_options['transport_options'] = machine_options['transport_options']
-          end
 
-          if machine_options[:convergence_options]
-            new_machine_options['convergence_options'] = machine_options[:convergence_options]
-          elsif machine_options['convergence_options']
-            new_machine_options['convergence_options'] = machine_options['convergence_options']
-          end
+          if machine_options[:transport_options] && machine_options[:transport_options]['is_windows']
 
-          if machine_spec.location && ssh_machine_exists?(machine_spec.name)
-            _current_machine_options = existing_machine_hash(machine_spec)
-            current_machine_options  = stringify_keys(_current_machine_options.dup)
-          end
-
-          log_info "machine_spec.name #{machine_spec.name}"
-
-          log_info "new_machine_options #{new_machine_options} \n\n current_machine_options #{current_machine_options}"
-
-
-          machine_file_hash = updated_ssh_machine_file_hash(stringify_keys(new_machine_options),
-                                                            stringify_keys(current_machine_options))
-
-          raise 'machine File Hash Is Empty' unless machine_file_hash
-          log_info("machine HASH = #{machine_file_hash}")
-
-          if machine_file_hash && machine_file_hash['transport_options']
-            host_for(machine_file_hash['transport_options'])
-            initialize_ssh(machine_file_hash['transport_options'])
-          end
-
-          machine_updated = create_ssh_machine_file(action_handler,
-                                                    machine_spec.name,
-                                                    machine_file_hash)
-          machine_options_for(machine_file_hash)
-
-          log_info("STRIPPED machine HASH = #{machine_file_hash}")
-          log_info("UNSTRIPPED machine HASH = #{machine_file_hash}")
-          log_info "machine_options_for #{machine_options_for}"
-
-          if machine_updated || !machine_spec.location
             machine_spec.location = {
               'driver_url' => driver_url,
               'driver_version' => Chef::Provisioning::SshDriver::VERSION,
@@ -105,36 +67,87 @@ class Chef
               'ssh_file_path' => "#{cluster_path}/#{machine_spec.name}.json",
               'allocated_at' => Time.now.utc.to_s
             }
-            log_info("machine_spec.location= #{machine_spec.location}")
-          end
-        end
 
-        def strip_hash_nil(val)
-          vvv = case val
-          when Hash
-            cleaned_val = val.delete_if { |kk,vv| vv.nil? || (vv.is_a?(String) && vv.empty?) }
-            cleaned_val.each do |k,v|
-              case v
-              when Hash
-                strip_hash_nil(v)
-              when Array
-                v.flatten!
-                v.uniq!
-              end
+          else
+
+            if machine_options[:transport_options]
+              new_machine_options['transport_options'] = machine_options[:transport_options]
+            elsif machine_options['transport_options']
+              new_machine_options['transport_options'] = machine_options['transport_options']
+            end
+
+            if machine_options[:convergence_options]
+              new_machine_options['convergence_options'] = machine_options[:convergence_options]
+            elsif machine_options['convergence_options']
+              new_machine_options['convergence_options'] = machine_options['convergence_options']
+            end
+
+            if machine_spec.location && ssh_machine_exists?(machine_spec.name)
+              _current_machine_options = existing_machine_hash(machine_spec)
+              current_machine_options  = stringify_keys(_current_machine_options.dup)
+            end
+
+            log_info "machine_spec.name #{machine_spec.name}"
+
+            log_info "new_machine_options #{new_machine_options} \n\n current_machine_options #{current_machine_options}"
+
+
+            machine_file_hash = updated_ssh_machine_file_hash(stringify_keys(new_machine_options),
+                                                              stringify_keys(current_machine_options))
+
+            raise 'machine File Hash Is Empty' unless machine_file_hash
+            log_info("machine HASH = #{machine_file_hash}")
+
+            if machine_file_hash && machine_file_hash['transport_options']
+              host_for(machine_file_hash['transport_options'])
+              initialize_ssh(machine_file_hash['transport_options'])
+            end
+
+            machine_updated = create_ssh_machine_file(action_handler,
+                                                      machine_spec.name,
+                                                      machine_file_hash)
+            machine_options_for(machine_file_hash)
+
+            log_info("STRIPPED machine HASH = #{machine_file_hash}")
+            log_info("UNSTRIPPED machine HASH = #{machine_file_hash}")
+            log_info "machine_options_for #{machine_options_for}"
+
+            if machine_updated || !machine_spec.location
+              machine_spec.location = {
+                'driver_url' => driver_url,
+                'driver_version' => Chef::Provisioning::SshDriver::VERSION,
+                'target_name' => machine_spec.name,
+                'ssh_file_path' => "#{cluster_path}/#{machine_spec.name}.json",
+                'allocated_at' => Time.now.utc.to_s
+              }
+
+              # if machine_options[:transport_options]
+              #   %w(winrm.host winrm.port winrm.username winrm.password).each do |key|
+              #     machine_spec.location[key] = machine_options[:transport_options][key] if machine_options[:vagrant_options][key]
+              #   end
+              # end
+
+              log_info("machine_spec.location= #{machine_spec.location}")
             end
           end
-          # puts "VVV is #{vvv}"
-          vvv
         end
 
         def ready_machine(action_handler, machine_spec, machine_options)
           allocate_machine(action_handler, machine_spec, machine_options)
-          machine_for(machine_spec, machine_options_for)
+          if machine_options[:transport_options] && machine_options[:transport_options]['is_windows']
+            machine_for(machine_spec, machine_options)
+          else
+            machine_for(machine_spec, machine_options_for)
+          end
         end
 
         def connect_to_machine(machine_spec, machine_options)
           allocate_machine(action_handler, machine_spec, machine_options)
-          machine_for(machine_spec, machine_options_for)
+          if machine_options[:transport_options] && machine_options[:transport_options]['is_windows']
+            machine_for(machine_spec, machine_options)
+          else
+            machine_for(machine_spec, machine_options_for)
+          end
         end
 
         def destroy_machine(action_handler, machine_spec, machine_options)
@@ -227,10 +240,10 @@ class Chef
 
         def updated_ssh_machine_file_hash(new_machine_options, current_machine_options)
           log_info "updated_ssh_machine_file_hash --\nnew_machine_options = #{new_machine_options}\ncurrent_machine_options = #{current_machine_options}"
-         if new_machine_options && new_machine_options['convergence_options']
+          if new_machine_options && new_machine_options['convergence_options']
             use_convergence_options   = new_machine_options['convergence_options']
           else
-          use_convergence_options = false
+            use_convergence_options = false
           end
 
           if new_machine_options && new_machine_options['transport_options']
@@ -289,7 +302,7 @@ class Chef
           host = host_for(opts)
 
           current_transport_options ||= {}
-          current_transport_options['ssh_options'] ||= {} 
+          current_transport_options['ssh_options'] ||= {}
           current_transport_options['ssh_options']['keys'] = [] unless current_transport_options['ssh_options']['keys']
           new_transport_options ||= {}
           new_transport_options['ssh_options'] ||= {}
@@ -397,7 +410,7 @@ class Chef
             log_info "@machine_options_for #{@machine_options_for}"
             return @machine_options_for
           else
-          @machine_options_for ||= begin
+            @machine_options_for ||= begin
               _given_machine_options = given_machine_options.dup
               ret_val = false
               ret_val = symbolize_keys(_given_machine_options) if _given_machine_options
@@ -407,20 +420,54 @@ class Chef
         end
 
         def machine_for(machine_spec, machine_options)
-          Chef::Provisioning::Machine::UnixMachine.new(machine_spec,
-                                                       transport_for(machine_options),
-                                                       convergence_strategy_for(machine_spec, machine_options))
+          if machine_options[:transport_options]['is_windows']
+            Chef::Provisioning::Machine::WindowsMachine.new(machine_spec, create_winrm_transport(machine_options),
+                                                            convergence_strategy_for(machine_spec, machine_options))
+          else
+            Chef::Provisioning::Machine::UnixMachine.new(machine_spec,
+                                                         transport_for(machine_options),
+                                                         convergence_strategy_for(machine_spec, machine_options))
+          end
         end
 
         def transport_for(machine_options)
-          Chef::Provisioning::Transport::SSH.new(@target_host, @username, @ssh_options_for_transport, @options, config)
+          if machine_options[:transport_options]['is_windows']
+            create_winrm_transport(machine_spec)
+          else
+            Chef::Provisioning::Transport::SSH.new(@target_host, @username, @ssh_options_for_transport, @options, config)
+          end
         end
 
         def convergence_strategy_for(machine_spec, machine_options)
-          @unix_convergence_strategy ||= begin
-            Chef::Provisioning::ConvergenceStrategy::InstallCached.new(machine_options[:convergence_options],
-                                                                       config)
+          if machine_options[:transport_options]['is_windows']
+            @windows_convergence_strategy ||= begin
+              Chef::Provisioning::ConvergenceStrategy::InstallMsi.
+                new(machine_options[:convergence_options], config)
+            end
+          else
+            @unix_convergence_strategy ||= begin
+              Chef::Provisioning::ConvergenceStrategy::InstallCached.new(machine_options[:convergence_options],
+                                                                         config)
+            end
           end
+        end
+
+        def create_winrm_transport(machine_options)
+          # forwarded_ports = machine_options[:transport_options]['forwarded_ports']
+
+          # TODO IPv6 loopback?  What do we do for that?
+          hostname = machine_options[:transport_options]['host'] || '127.0.0.1'
+          port = machine_options[:transport_options]['port'] || 5985
+          # port = forwarded_ports[port] if forwarded_ports[port]
+          endpoint = "http://#{hostname}:#{port}/wsman"
+          type = :plaintext
+          options = {
+            :user => machine_options[:transport_options]['user'] || 'vagrant',
+            :pass => machine_options[:transport_options]['password'] || 'vagrant',
+            :disable_sspi => true
+          }
+
+          Chef::Provisioning::Transport::WinRM.new(endpoint, type, options, config)
         end
 
         # def create_ssh_transport(machine_options)
