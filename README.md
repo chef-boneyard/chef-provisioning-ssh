@@ -41,48 +41,73 @@ The snippet from that link is:
            chef, or the username configured in .ssh/config).
       
        The options are used in
-         Net::SSH.start(host, username, ssh_options)
+         Net::SSH.start(host, username, ssh_options, options)
 
 In addition to host, ip_address and hostname are also additional options.
 
-* valid ssh options are:
 
-        :auth_methods, 
-        :bind_address, 
-        :compression, 
-        :compression_level, 
-        :config,
-        :encryption, 
-        :forward_agent, 
-        :hmac, 
-        :host_key,
-        :keepalive, 
-        :keepalive_interval, 
-        :kex, 
-        :keys, 
-        :key_data,
-        :languages, 
-        :logger, 
-        :paranoid, 
-        :password, 
-        :port, 
-        :proxy,
-        :rekey_blocks_limit,
-        :rekey_limit, 
-        :rekey_packet_limit, 
-        :timeout, 
-        :verbose,
-        :global_known_hosts_file, 
-        :user_known_hosts_file, 
-        :host_key_alias,
-        :host_name, 
-        :user, 
-        :properties, 
-        :passphrase, 
-        :keys_only, 
-        :max_pkt_size,
-        :max_win_size, :send_env, 
-        :use_agent
+* full machine_options for SSH example:
+
+        with_machine_options  :transport_options => {
+                'is_windows' => false,
+                'ip_address' => '192.168.33.23',
+                'host' => 'somehost',
+                'username' => 'vagrant',
+                'ssh_options' => {
+                    'auth_methods' => '', 
+                    'bind_address' => '',
+                    'compression' => '',
+                    'compression_level' => '',
+                    'config' => '',
+                    'encryption' => '',
+                    'forward_agent' => '',
+                    'hmac' => '',
+                    'host_key' => '',
+                    'keepalive' => '',
+                    'keepalive_interval' => '',
+                    'kex' => '',
+                    'keys' => ['/home/username/.vagrant.d/insecure_private_key'],
+                    'key_data' => '',
+                    'languages' => '',
+                    'logger' => '',
+                    'paranoid' => '',
+                    'password' => '',
+                    'port' => '',
+                    'proxy' => '',
+                    'rekey_blocks_limit' => '',
+                    'rekey_limit' => '',
+                    'rekey_packet_limit' => '',
+                    'timeout' => '',
+                    'verbose' => '',
+                    'global_known_hosts_file' => '',
+                    'user_known_hosts_file' => '',
+                    'host_key_alias' => '',
+                    'host_name' => '',
+                    'user' => '',
+                    'properties' => '',
+                    'passphrase' => '',
+                    'keys_only' => '',
+                    'max_pkt_size' => '',
+                    'max_win_size, :send_env' => '',
+                    'use_agent' => ''
+                },
+                'options' => {
+                  'prefix' => 'sudo ',
+                  'ssh_pty_enable' => false,
+                  'ssh_gateway' => 'yourgateway'
+                }
+              }
+
+* full machine_options for WinRM example:
+
+        with_machine_options  :transport_options => {
+                    'is_windows' => true,
+                    'host' => '192.168.33.23',
+                    'port' => 5985,
+                    'username' => 'vagrant',
+                    'password' => 'vagrant'
+                }
+
 
 * machine resource example:
 
@@ -90,9 +115,9 @@ In addition to host, ip_address and hostname are also additional options.
 
 			with_driver 'ssh'
 
-			machine "sshone" do
+			machine "ssh" do
 			  action [:ready, :setup, :converge]
-			  machine_options 'transport_options' => {
+			  machine_options :transport_options => {
 			    'ip_address' => '192.168.33.22',
 			    'username' => 'vagrant',
 			    'ssh_options' => {
@@ -103,16 +128,23 @@ In addition to host, ip_address and hostname are also additional options.
 			  converge true
 			end
 
-			machine "sshtwo" do
+            ##
+            # With WinRM you must use a remote chef-server
+            # local-mode chef server is not currently supported
+
+            with_chef_server "https://api.opscode.com/organizations/double-z",
+                             :client_name => Chef::Config[:node_name],
+                             :signing_key_filename => Chef::Config[:client_key]
+
+			machine "winrm" do
 			  action [:ready, :setup, :converge]
 			  machine_options :transport_options => {
-			    'ip_address' => '192.168.33.23',
+			    'host' => '192.168.33.23',
+                'port' => 5985,
 			    'username' => 'vagrant',
-			    'ssh_options' => {
-			      'keys' => ['/home/username/.vagrant.d/insecure_private_key']
-			    }
+			    'password' => 'vagrant'
 			  }
-			  recipe 'vagrant::sshtwo'
+			  recipe 'windows'
 			  converge true
 			end
 
