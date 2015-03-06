@@ -26,7 +26,7 @@ machine "sshone" do
       'password' => 'vagrant'
     }
   }
-  recipe 'vagrant::sshone'
+  recipe 'vagrant::sshtwo'
   converge true
 end
 
@@ -37,7 +37,7 @@ machine "sshtwo" do
     'ip_address' => '192.168.33.123',
     'username' => 'vagrant',
     'ssh_options' => {
-      'password' => 'vagrant'
+      'keys' => ['/Users/zzondlo/.ssh/id_rsa']
     }
   }
   recipe 'vagrant::sshtwo'
