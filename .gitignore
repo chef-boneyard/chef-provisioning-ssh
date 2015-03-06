@@ -1,3 +1,4 @@
+pkg/
 test/.vagrant
 test/.chef/provisioning
 test/nodes
