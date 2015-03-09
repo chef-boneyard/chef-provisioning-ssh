@@ -22,7 +22,13 @@ Or install it yourself as:
 
 ## Usage
 
-The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. `Transport_options` must be a *symbol*. The transport_options can be viewed in the code for chef-provisioning here:
+The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. 
+
+The `transport_options` key must be a *symbol*. 
+
+Sub-keys should be *strings*.
+
+The transport_options can be viewed in the code for chef-provisioning here:
 
 https://github.com/chef/chef-provisioning/blob/master/lib/chef/provisioning/transport/ssh.rb#L17-L34
 
