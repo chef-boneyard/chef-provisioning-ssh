@@ -15,7 +15,7 @@ class Chef::Resource::SshCluster < Chef::Resource::LWRPBase
   end
 
   # We are not interested in Chef's cloning behavior here.
-  def load_prior_resource
+  def load_prior_resource(type, name)
     Chef::Log.debug("Overloading #{resource_name}.load_prior_resource with NOOP")
   end
 end
