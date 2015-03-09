@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ## Usage
 
-The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. Transport_options can be a string or symbol and will be properly converted. The transport_options can be viewed in the code for chef-provisioning here:
+The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. `Transport_options` must be a *symbol*. The transport_options can be viewed in the code for chef-provisioning here:
 
 https://github.com/chef/chef-provisioning/blob/master/lib/chef/provisioning/transport/ssh.rb#L17-L34
 
@@ -139,6 +139,7 @@ In addition to host, ip_address and hostname are also additional options.
 			machine "winrm" do
 			  action [:ready, :setup, :converge]
 			  machine_options :transport_options => {
+			    'is_windows' => true,
 			    'host' => '192.168.33.23',
                 'port' => 5985,
 			    'username' => 'vagrant',
