@@ -321,7 +321,7 @@ class Chef
             new_hash['ssh_options']['password'] = new_transport_options['password'] if new_transport_options['password']
           end
 
-          merged_transport_options        = Chef::Mixin::DeepMerge.merge(current_transport_options, new_transport_options)
+          merged_transport_options        = Chef::Mixin::DeepMerge.merge(current_transport_options.to_hash, new_transport_options.to_hash)
           _merged_transport_options       = merged_transport_options.dup
           updated_transport_options_hash = _merged_transport_options.dup
           updated_transport_options_hash = Chef::Mixin::DeepMerge.merge(merged_transport_options, new_hash) unless new_hash.empty?
