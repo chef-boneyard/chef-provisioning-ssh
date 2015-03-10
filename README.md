@@ -51,6 +51,9 @@ The snippet from that link is:
 
 In addition to host, ip_address and hostname are also additional options.
 
+* the `ssh_options` key accepts options from Net::SSH.start, the full list can be seen here:
+
+	http://net-ssh.github.io/ssh/v2/api/classes/Net/SSH.html#M000002
 
 * full machine_options for SSH example:
 
