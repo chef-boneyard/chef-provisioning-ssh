@@ -13,8 +13,7 @@ require 'chef/provisioning/ssh_driver'
 #       })
 
 # with_ssh_cluster "/home/js4/metal/chef-metal/docs/examples/drivers/ssh"
-# with_driver 'ssh'
-
+# with_driver 'ssh
 with_driver 'ssh'
 machine "sshone" do
   # action :destroy
@@ -30,6 +29,16 @@ machine "sshone" do
   converge true
 end
 
+machine_execute "touch /tmp/test.txt" do
+  machine 'sshone'
+end
+
+machine_file "/tmp/install-client.sh" do
+  local_path "/tmp/install-client.sh"
+  machine 'sshone'
+  action :upload
+end
+
 machine "sshtwo" do
   # action :destroy
   action [:ready, :setup, :converge]
@@ -43,4 +52,3 @@ machine "sshtwo" do
   recipe 'vagrant::sshtwo'
   converge true
 end
-

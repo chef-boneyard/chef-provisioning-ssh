@@ -142,11 +142,16 @@ class Chef
         end
 
         def connect_to_machine(machine_spec, machine_options)
-          allocate_machine(action_handler, machine_spec, machine_options)
           if machine_options[:transport_options] && machine_options[:transport_options]['is_windows']
             machine_for(machine_spec, machine_options)
           else
-            machine_for(machine_spec, machine_options_for)
+            if machine_spec.location && ssh_machine_exists?(machine_spec.name)
+              _current_machine_options = existing_machine_hash(machine_spec)
+              current_machine_options  = stringify_keys(_current_machine_options.dup)
+            end
+            host_for(current_machine_options['transport_options'])
+            initialize_ssh(current_machine_options['transport_options'])
+            machine_for(machine_spec, machine_options_for(current_machine_options))
           end
         end
 
