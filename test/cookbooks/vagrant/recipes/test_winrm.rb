@@ -1,4 +1,3 @@
-chef_gem 'chef-provisioning-ssh'
 require 'chef/provisioning/ssh_driver'
 
 # require 'chef/config'
