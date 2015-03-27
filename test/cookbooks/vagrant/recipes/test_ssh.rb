@@ -25,7 +25,7 @@ machine "sshone" do
       'password' => 'vagrant'
     }
   }
-  recipe 'vagrant::sshtwo'
+  recipe 'vagrant::sshone'
   converge true
 end
 
@@ -33,10 +33,10 @@ machine_execute "touch /tmp/test.txt" do
   machine 'sshone'
 end
 
-machine_file "/tmp/install-client.sh" do
-  local_path "/tmp/install-client.sh"
+machine_file "/tmp/test.txt" do
+  local_path "/tmp/test.txt"
   machine 'sshone'
-  action :upload
+  action :download
 end
 
 machine "sshtwo" do
@@ -46,7 +46,7 @@ machine "sshtwo" do
     'ip_address' => '192.168.33.123',
     'username' => 'vagrant',
     'ssh_options' => {
-      'keys' => ['/Users/zzondlo/.ssh/id_rsa']
+      'keys' => ['~/.vagrant.d/insecure_private_key']
     }
   }
   recipe 'vagrant::sshtwo'

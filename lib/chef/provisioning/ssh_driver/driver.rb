@@ -6,7 +6,7 @@ require 'chef/provisioning/machine/basic_machine'
 require 'chef/provisioning/machine/unix_machine'
 require 'chef/provisioning/machine/windows_machine'
 require 'chef/provisioning/convergence_strategy/install_msi'
-require 'chef/provisioning/convergence_strategy/install_cached'
+require 'chef/provisioning/convergence_strategy/install_sh'
 require 'chef/provisioning/transport/winrm'
 require 'chef/provisioning/transport/ssh'
 require 'chef/provisioning/ssh_driver/version'
@@ -451,8 +451,8 @@ class Chef
             end
           else
             @unix_convergence_strategy ||= begin
-              Chef::Provisioning::ConvergenceStrategy::InstallCached.new(machine_options[:convergence_options],
-                                                                         config)
+              Chef::Provisioning::ConvergenceStrategy::InstallSh.new(machine_options[:convergence_options],
+                                                                     config)
             end
           end
         end
