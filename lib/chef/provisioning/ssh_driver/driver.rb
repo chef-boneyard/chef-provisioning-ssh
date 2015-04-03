@@ -135,8 +135,9 @@ class Chef
                           ssh_machine[:transport_options][:ssh_options] : {}
           options = ssh_machine[:transport_options][:options] ?
                       ssh_machine[:transport_options][:options] : {}
+          options.merge!({:prefix => 'sudo '}) unless options.has_key?(:prefix)
           Chef::Provisioning::Transport::SSH.new(hostname, username,
-                                                 ssh_options, {:prefix => 'sudo '}, config)
+                                                 ssh_options, options, config)
         end
 
         def create_winrm_transport(ssh_machine)
