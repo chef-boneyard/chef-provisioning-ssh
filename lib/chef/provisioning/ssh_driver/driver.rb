@@ -388,7 +388,7 @@ class Chef
         def can_connect?(_ssh_options, host)
         end
 
-        def initialize_ssh(transport_options, options = {})
+        def initialize_ssh(transport_options)
           _transport_options_s = transport_options.dup
           _transport_options = symbolize_keys(_transport_options_s.dup)
           log_info "_transport_options is #{_transport_options}"
@@ -397,6 +397,7 @@ class Chef
           @username = ssh_options[:user] rescue false
           @ssh_options_for_transport = ssh_options_for(ssh_options)
 
+          options = _transport_options[:options] || {}
           new_options = options.empty? ? options : symbolize_keys(options)
           new_options.merge!({:ssh_pty_enable => true}) unless new_options.has_key?(:ssh_pty_enable)
           new_options.merge!({:prefix => 'sudo '}) unless @username == 'root'
