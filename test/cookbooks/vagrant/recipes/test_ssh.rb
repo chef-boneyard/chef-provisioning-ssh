@@ -1,4 +1,3 @@
-chef_gem 'chef-provisioning-ssh'
 require 'chef/provisioning/ssh_driver'
 
 # require 'chef/config'
@@ -15,14 +14,15 @@ require 'chef/provisioning/ssh_driver'
 # with_ssh_cluster "/home/js4/metal/chef-metal/docs/examples/drivers/ssh"
 # with_driver 'ssh
 with_driver 'ssh'
+
 machine "sshone" do
   # action :destroy
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
-    'ip_address' => '192.168.33.122',
-    'username' => 'vagrant',
-    'ssh_options' => {
-      'password' => 'vagrant'
+    :ip_address => '192.168.33.122',
+    :username => 'vagrant',
+    :ssh_options => {
+      :password => 'vagrant'
     }
   }
   recipe 'vagrant::sshone'
@@ -39,14 +39,18 @@ machine_file "/tmp/test.txt" do
   action :download
 end
 
+# with_chef_server "https://api.opscode.com/organizations/double-z",
+#                      :client_name => Chef::Config[:node_name],
+#                      :signing_key_filename => Chef::Config[:client_key]
+
 machine "sshtwo" do
   # action :destroy
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
-    'ip_address' => '192.168.33.123',
-    'username' => 'vagrant',
-    'ssh_options' => {
-      'keys' => ['~/.vagrant.d/insecure_private_key']
+    :ip_address => '192.168.33.123',
+    :username => 'vagrant',
+    :ssh_options => {
+      :keys => ['~/.vagrant.d/insecure_private_key']
     }
   }
   recipe 'vagrant::sshtwo'
