@@ -43,19 +43,9 @@ class Chef
         def allocate_machine(action_handler, machine_spec, machine_options)
           ensure_ssh_cluster(action_handler) unless ::File.exists?(cluster_path)
           new_machine_options = deep_hashify(machine_options)
-          machine_file_hash = updated_machine_file_hash(stringify_keys(new_machine_options),
-                                                        existing_ssh_machine(machine_spec))
-
-          raise 'machine File Hash Is Empty' unless machine_file_hash
-          updated_machine_options        = deep_hashify(machine_file_hash)
-          updated_machine_options_to_sym = symbolize_keys(updated_machine_options)
-
-          validate_machine_options(action_handler, machine_spec, updated_machine_options_to_sym)
-          test_connection(updated_machine_options_to_sym) if machine_spec.location
-
           machine_updated = create_ssh_machine_file(action_handler,
                                                     machine_spec.name,
-                                                    machine_file_hash)
+                                                    new_machine_options)
           if machine_updated || !machine_spec.location
             machine_spec.location = {
               'driver_url' => driver_url,
@@ -82,7 +72,6 @@ class Chef
           if !ssh_machine
             raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
           end
-          wait_for_transport(action_handler, ssh_machine, machine_spec)
           machine_for(machine_spec, ssh_machine)
         end
 
@@ -100,10 +89,6 @@ class Chef
           end
           action_handler.report_progress("SSH Machine #{machine_spec.name} is existing hardware login and power off.")
         end
-
-        ############################
-        ############################
-
 
         def updated_machine_file_hash(_new_machine_options, current_machine_options)
 
@@ -238,13 +223,6 @@ class Chef
           end
           use_host
         end
-
-
-        ############################
-        ############################
-
-
-
 
         def machine_for(machine_spec, ssh_machine)
 
@@ -422,6 +400,7 @@ class Chef
             raise exception_string
           end
         end
+
         def ensure_ssh_cluster(action_handler)
           _cluster_path = cluster_path
           Chef::Provisioning.inline_resource(action_handler) do
@@ -429,10 +408,25 @@ class Chef
           end
         end
 
+        def validate_options_and_test_connection(machine_file_hash)
+          updated_machine_options        = deep_hashify(machine_file_hash)
+          updated_machine_options_to_sym = symbolize_keys(updated_machine_options)
+
+          validate_machine_options(action_handler, machine_spec, updated_machine_options_to_sym)
+          test_connection(updated_machine_options_to_sym) if machine_spec.location
+        end
+
         def create_ssh_machine_file(action_handler, machine_spec, machine_options)
+
+          machine_file_hash = updated_machine_file_hash(stringify_keys(machine_options),
+                                                        existing_ssh_machine(machine_spec))
+
+          raise 'machine File Hash Is Empty' unless machine_file_hash
+          validate_options_and_test_connection(machine_file_hash)
+
           log_info("File is = #{ssh_machine_file(machine_spec)}")
           log_info("current_machine_options = #{machine_options.to_s}")
-          machine_options_hash = deep_hashify(machine_options)
+          machine_options_hash = deep_hashify(machine_file_hash)
           stringy_machine_options = stringify_keys(machine_options_hash)
           file_path = ssh_machine_file(machine_spec)
           options_parsed = ::JSON.parse(stringy_machine_options.to_json)
