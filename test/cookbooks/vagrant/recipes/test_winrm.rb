@@ -1,4 +1,3 @@
-chef_gem 'chef-provisioning-ssh'
 require 'chef/provisioning/ssh_driver'
 
 # require 'chef/config'
@@ -16,31 +15,21 @@ require 'chef/provisioning/ssh_driver'
 # with_driver 'ssh'
 
 with_driver 'ssh'
-machine "sshone" do
+
+with_chef_server "https://api.opscode.com/organizations/zzondlo",
+  :client_name => Chef::Config[:node_name],
+  :signing_key_filename => Chef::Config[:client_key]
+
+machine "winone" do
   # action :destroy
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
-    'ip_address' => '192.168.33.122',
-    'username' => 'vagrant',
-    'ssh_options' => {
-      'password' => 'vagrant'
-    }
+    'is_windows' => true,
+    'host' => '192.168.33.100'
   }
-  recipe 'vagrant::sshtwo'
+  #   'username' => 'vagrant',
+  #   'password' => 'vagrant'
+  # }
+  recipe 'windows'
   converge true
 end
-
-machine "sshtwo" do
-  # action :destroy
-  action [:ready, :setup, :converge]
-  machine_options :transport_options => {
-    'ip_address' => '192.168.33.123',
-    'username' => 'vagrant',
-    'ssh_options' => {
-      'keys' => ['/Users/zzondlo/.ssh/id_rsa']
-    }
-  }
-  recipe 'vagrant::sshtwo'
-  converge true
-end
-
