@@ -150,31 +150,17 @@ class Chef
 
         def create_winrm_transport(ssh_machine)
           # # TODO IPv6 loopback?  What do we do for that?
-          # hostname = ssh_machine[:transport_options][:host] ||
-          #   ssh_machine[:transport_options][:ip_address]
-          # port = ssh_machine[:transport_options][:port] || 5985
-          # # port = forwarded_ports[port] if forwarded_ports[port]
-          # endpoint = "http://#{hostname}:#{port}/wsman"
-          # type = :plaintext
-          # options = {
-          #   :user => ssh_machine[:transport_options][:username],
-          #   :pass => ssh_machine[:transport_options][:password],
-          #   :disable_sspi => true
-          # }
-
-
-          hostname = "192.168.33.100"
-          port = 5985
-
+          hostname = ssh_machine[:transport_options][:host] ||
+            ssh_machine[:transport_options][:ip_address]
+          port = ssh_machine[:transport_options][:port] || 5985
+          # port = forwarded_ports[port] if forwarded_ports[port]
           endpoint = "http://#{hostname}:#{port}/wsman"
           type = :plaintext
-
           options = {
-            :user => 'vagrant',
-            :pass => 'vagrant',
+            :user => ssh_machine[:transport_options][:username],
+            :pass => ssh_machine[:transport_options][:password],
             :disable_sspi => true
           }
-
           Chef::Provisioning::Transport::WinRM.new(endpoint, type, options, config)
         end
 
