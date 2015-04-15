@@ -42,7 +42,7 @@ class Chef
 
         def allocate_machine(action_handler, machine_spec, machine_options)
           existing_machine         = ssh_machine_exists?(machine_spec)
-          ssh_machine_file_updated = create_ssh_machine(action_handler, machine_spec, machine_options)
+          ssh_machine_file_updated = create_machine(action_handler, machine_spec, machine_options)
 
           if !existing_machine || !machine_spec.location
             machine_spec.location = {
@@ -215,7 +215,7 @@ class Chef
               extras = machine_options[:transport_options].keys - req_and_valid_fields.flatten
 
               extras.each do |extra|
-                error_msgs << ":transport_options => :#{extra} not allowed."
+                error_msgs << ":transport_options => :#{extra} not allowed." unless extra == :port
                 valid = false
               end
             else
@@ -281,8 +281,10 @@ class Chef
 
         def ensure_ssh_cluster(action_handler)
           _cluster_path = cluster_path
-          Chef::Provisioning.inline_resource(action_handler) do
-            ssh_cluster _cluster_path
+          unless ::File.exists?(_cluster_path)
+            Chef::Provisioning.inline_resource(action_handler) do
+              ssh_cluster _cluster_path
+            end
           end
         end
 
@@ -292,10 +294,10 @@ class Chef
           machine_options_hash_for_sym = deep_hashify(machine_options)
           symbolized_machine_options   = symbolize_keys(machine_options_hash_for_sym)
           validate_machine_options(action_handler, machine_spec, symbolized_machine_options)
-        end
+          # end
 
 
-        def create_ssh_machine(action_handler, machine_spec, machine_options)
+          # def create_ssh_machine(action_handler, machine_spec, machine_options)
           log_info("File is = #{ssh_machine_file(machine_spec)}")
           log_info("current_machine_options = #{machine_options.to_s}")
 
