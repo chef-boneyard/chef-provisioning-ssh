@@ -65,16 +65,13 @@ class Chef
         end
 
         def ready_machine(action_handler, machine_spec, machine_options)
-          allocate_machine(action_handler, machine_spec, machine_options)
           ssh_machine = existing_ssh_machine_to_sym(machine_spec)
 
           if !ssh_machine
             raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
           end
 
-          unless ssh_machine[:transport_options][:is_windows]
-            wait_for_transport(action_handler, ssh_machine, machine_spec, machine_options)
-          end
+          wait_for_transport(action_handler, ssh_machine, machine_spec, machine_options)
           machine_for(machine_spec, machine_options)
         end
 
@@ -86,9 +83,16 @@ class Chef
         def destroy_machine(action_handler, machine_spec, machine_options)
           ssh_machine = ssh_machine_exists?(machine_spec)
 
-          if !ssh_machine
+          if !ssh_machine || !::File.exists?(machine_spec.location['ssh_machine_file'])
             raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
-          end
+	  else
+            Chef::Provisioning.inline_resource(action_handler) do
+	      file machine_spec.location['ssh_machine_file'] do
+		action :delete
+		backup false
+	      end
+	    end 
+	  end
 
 
         end
