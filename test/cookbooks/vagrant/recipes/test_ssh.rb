@@ -16,13 +16,14 @@ require 'chef/provisioning/ssh_driver'
 with_driver 'ssh'
 
 machine "sshone" do
-  # action :destroy
+  #action :destroy
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
     'ip_address' => '192.168.33.122',
     :username => 'vagrant',
     'ssh_options' => {
-      :password => 'vagrant'
+      #:password => 'vagrant'
+      :keys => ['/home/vagrant/.ssh/id_rsa']
     },
     'options' => {
       'ssh_pty_enable' => true
