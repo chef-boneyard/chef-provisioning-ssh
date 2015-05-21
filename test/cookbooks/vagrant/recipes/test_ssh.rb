@@ -16,13 +16,17 @@ require 'chef/provisioning/ssh_driver'
 with_driver 'ssh'
 
 machine "sshone" do
-  # action :destroy
+  #action :destroy
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
-    :ip_address => '192.168.33.122',
+    'ip_address' => '192.168.33.122',
     :username => 'vagrant',
-    :ssh_options => {
-      :password => 'vagrant'
+    'ssh_options' => {
+      #:password => 'vagrant'
+      :keys => ['/home/vagrant/.ssh/id_rsa']
+    },
+    'options' => {
+      'ssh_pty_enable' => true
     }
   }
   recipe 'vagrant::sshone'
@@ -48,9 +52,10 @@ machine "sshtwo" do
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
     :ip_address => '192.168.33.123',
-    :username => 'vagrant',
+    'username' => 'vagrant',
     :ssh_options => {
-      :keys => ['~/.vagrant.d/insecure_private_key']
+      'password' => 'vagrant'
+      # :keys => ['~/.vagrant.d/insecure_private_key']
     }
   }
   recipe 'vagrant::sshtwo'

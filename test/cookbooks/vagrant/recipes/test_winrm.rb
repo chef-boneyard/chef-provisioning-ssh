@@ -25,11 +25,11 @@ machine "winone" do
   action [:ready, :setup, :converge]
   machine_options :transport_options => {
     'is_windows' => true,
-    'host' => '192.168.33.100'
+    'host' => '192.168.33.100',
+    'username' => 'vagrant',
+    'password' => 'vagrant'
+    # 'port' => 5985
   }
-  #   'username' => 'vagrant',
-  #   'password' => 'vagrant'
-  # }
   recipe 'windows'
   converge true
 end
