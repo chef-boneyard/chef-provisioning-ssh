@@ -262,7 +262,7 @@ class Chef
               end
 
               if machine_options[:transport_options][:options]
-                valid_fields = [:prefix, :ssh_pty_enable, :ssh_gateway]
+                valid_fields = [:prefix, :ssh_pty_enable, :ssh_gateway, :scp_temp_dir]
 
                 extras = machine_options[:transport_options][:options].keys - valid_fields
 
