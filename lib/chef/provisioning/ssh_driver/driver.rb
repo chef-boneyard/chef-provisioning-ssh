@@ -390,7 +390,7 @@ class Chef
           unless machine_options['transport_options']['is_windows']
             machine_options['transport_options']['options'] ||= {}
             unless machine_options['transport_options']['username'] == 'root'
-              machine_options['transport_options']['options']['prefix'] = 'sudo '
+              machine_options['transport_options']['options']['prefix'] ||= 'sudo '
             end
           end
           ensure_has_keys_or_password(machine_options['transport_options'])
@@ -405,9 +405,11 @@ class Chef
             if transport_hash['ssh_options']
               ssh_hash = transport_hash['ssh_options']
               keys = ssh_hash['keys'] || false
+              key_data = ssh_hash['key_data'] || false
               password = ssh_hash['password'] || false
               has_either = ((password && password.kind_of?(String)) ||
-                            (keys && !keys.empty? && keys.kind_of?(Array)))
+                            (keys && !keys.empty? && keys.kind_of?(Array)) ||
+                            (key_data && !key_data.empty? && key_data.kind_of?(Array)))
             else
               has_either = false
             end
