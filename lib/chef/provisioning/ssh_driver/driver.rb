@@ -389,8 +389,8 @@ class Chef
           validate_transport_options_host(machine_options['transport_options']['host'])
           unless machine_options['transport_options']['is_windows']
             machine_options['transport_options']['options'] ||= {}
-			#cz: only set prefix to sudo for non root if not already set
-            unless (machine_options['transport_options']['username'] == 'root') && (machine_options['transport_options']['options']['prefix'].nil? || machine_options['transport_options']['options']['prefix'].empty?)
+            #cz: only set prefix to sudo for non root if not already set
+            unless (machine_options['transport_options']['username'] == 'root') && (machine_options['transport_options']['options']['prefix'] && !machine_options['transport_options']['options']['prefix'].empty?)
               machine_options['transport_options']['options']['prefix'] = 'sudo '
             end
           end
