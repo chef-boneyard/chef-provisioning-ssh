@@ -390,7 +390,7 @@ class Chef
           unless machine_options['transport_options']['is_windows']
             machine_options['transport_options']['options'] ||= {}
             unless machine_options['transport_options']['username'] == 'root'
-              machine_options['transport_options']['options']['prefix'] = 'sudo '
+              machine_options['transport_options']['options']['prefix'] ||= 'sudo '
             end
           end
           ensure_has_keys_or_password(machine_options['transport_options'])
