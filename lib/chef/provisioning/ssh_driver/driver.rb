@@ -5,6 +5,7 @@ require 'chef/provisioning/version'
 require 'chef/provisioning/machine/basic_machine'
 require 'chef/provisioning/machine/unix_machine'
 require 'chef/provisioning/machine/windows_machine'
+require 'chef/provisioning/convergence_strategy/install_cached'
 require 'chef/provisioning/convergence_strategy/install_msi'
 require 'chef/provisioning/convergence_strategy/install_sh'
 require 'chef/provisioning/transport/winrm'
@@ -137,6 +138,9 @@ class Chef
           if ssh_machine[:transport_options][:is_windows]
             Chef::Provisioning::ConvergenceStrategy::InstallMsi.
               new(ssh_machine[:convergence_options], config)
+          elsif ssh_machine[:transport_options][:install_cached]
+            Chef::Provisioning::ConvergenceStrategy::InstallCached.
+              new(ssh_machine[:convergence_options], config)
           else
             Chef::Provisioning::ConvergenceStrategy::InstallSh.
               new(ssh_machine[:convergence_options], config)
@@ -241,7 +245,9 @@ class Chef
                 valid = false
               end
 
-              valid_fields = [:is_windows, :host, :hostname, :ip_address, :username, :ssh_options, :options]
+              valid_fields = [:is_windows, :install_cached,
+                :host, :hostname, :ip_address, :username,
+                :ssh_options, :options]
 
               extras = machine_options[:transport_options].keys - valid_fields
 
