@@ -17,7 +17,8 @@ Gem::Specification.new do |s|
   s.require_path  = "lib"
   s.bindir       = "bin"
   s.executables  = %w( )
-  s.files = %w(Rakefile LICENSE README.md) + Dir.glob("{distro,lib,tasks,spec}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
+  s.files = %w(Rakefile LICENSE README.md Gemfile) + Dir.glob("*.gemspec") +
+      Dir.glob("{distro,lib,tasks,spec}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
   s.add_dependency 'chef-provisioning'
 
