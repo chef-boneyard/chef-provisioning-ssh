@@ -173,7 +173,7 @@ which will bring up both nodes.
 
 Then run from the test directory:
 
-`chef-client -z -o vagrant::test_provisioning_ssh`
+`chef-client -z -o vagrant::test_ssh`
 
 NOTE: if the second machine fails it will be a result of issues with your vagrant key.
 
