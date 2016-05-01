@@ -2,7 +2,7 @@
 
 # Chef::Provisioning::Ssh
 
-TODO: Write a gem description
+Provisions existing machines using SSH.
 
 ## Installation
 
@@ -22,13 +22,25 @@ Or install it yourself as:
 
 ## Usage
 
+### driver_url
+
+`with_driver 'ssh'` will store machine data in a file in the directory `.chef/provisioning/ssh`
+on the provisioning machine, with a reference
+to the file in the node attribute `node['chef_provisioning']['reference']['ssh_machine_file']`
+
+`with_driver 'ssh:/some/path'` will store machine data in the specified directory, with a 
+reference to the file as above.
+
+`with_driver 'ssh:chef'` will store all machine data in the node attribute 
+`node['chef_provisioning']['reference']`.
+
+### machine_options
+
 The `machine_options` for provisioning ssh now use the key `transport_options` which line up directly with the `transport_options` for chef-provisioning proper. 
 
-The `transport_options` key must be a *symbol*. 
+The `transport_options` key and sub-keys may be strings or symbols.
 
-Sub-keys should be *strings*.
-
-The transport_options can be viewed in the code for chef-provisioning here:
+The `transport_options` can be viewed in the code for chef-provisioning here:
 
 https://github.com/chef/chef-provisioning/blob/master/lib/chef/provisioning/transport/ssh.rb#L17-L34
 
@@ -161,7 +173,7 @@ In addition to host, ip_address and hostname are also additional options.
 
 To test it out, clone the repo:
 
-`git clone https://github.com/double-z/chef-provisioning-ssh.git`
+`git clone https://github.com/chef/chef-provisioning-ssh.git`
 
 in the test directory there is a Vagrantfile with 2 nodes. 
 
@@ -175,7 +187,7 @@ Then run from the test directory:
 
 `chef-client -z -o vagrant::test_ssh`
 
-NOTE: if the second machine fails it will be a result of issues with your vagrant key.
+NOTE: if the first machine fails it will likely be a result of issues with your vagrant key.
 
 This will run chef-provisioning on each of the two vagrant nodes.
 
@@ -183,9 +195,13 @@ thats it.
 
 party on wayne.
 
+Be aware, the `test_ssh` recipe is designed for testing, not to illustrate good practice. For example, you
+do not need to list all three actions `[ :ready, :setup, :converge ]` or specify `converge true`
+if you want the normal 'bootstrap if needed, converge if changed' behavior.
+
 ## Contributing
 
-1. Fork it ( http://github.com/double-z/chef-provisioning-ssh/fork )
+1. Fork it ( http://github.com/chef/chef-provisioning-ssh/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
