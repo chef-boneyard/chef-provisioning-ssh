@@ -4,3 +4,7 @@ test/.chef/provisioning
 test/nodes
 test/clients
 test/.chef/local-mode-cache
+.project
+vendor/
+Gemfile.lock
+*.gem

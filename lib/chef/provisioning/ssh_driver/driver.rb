@@ -22,7 +22,13 @@ class Chef
 
         include Chef::Provisioning::SshDriver::Helpers
 
+        # cluster_path is where the driver stores machine data unless use_chef_store is true
         attr_reader :cluster_path
+        
+        # use_chef_store is true if the driver_url is 'ssh:chef'
+        # In this case, machine data is stored in chef
+        # under node['chef_provisioning']['reference']['machine_options']
+        attr_reader :use_chef_store
 
         def self.from_url(driver_url, config)
           Driver.new(driver_url, config)
@@ -32,43 +38,44 @@ class Chef
           super(driver_url, config)
           scheme, cluster_path = driver_url.split(':', 2)
           @cluster_path = cluster_path
+          @use_chef_store = cluster_path == 'chef' 
         end
 
         def self.canonicalize_url(driver_url, config)
           scheme, cluster_path = driver_url.split(':', 2)
-          cluster_path = File.expand_path(cluster_path || File.join(Chef::Config.config_dir, 'provisioning/ssh'))
+          unless cluster_path == 'chef'
+            cluster_path = File.expand_path(cluster_path || File.join(Chef::Config.config_dir, 'provisioning/ssh'))
+          end
           "ssh:#{cluster_path}"
         end
 
         def allocate_machine(action_handler, machine_spec, machine_options)
-          existing_machine         = ssh_machine_exists?(machine_spec)
-          ssh_machine_file_updated = create_machine(action_handler, machine_spec, machine_options)
-
-          if !existing_machine || !machine_spec.location
-            machine_spec.location = {
+          ssh_machine_options = prepare_machine_options(action_handler, machine_spec, machine_options)
+          log_info("current_machine_options = #{ssh_machine_options.to_s}")
+          
+          unless ssh_machine_exists?(machine_spec)
+            machine_spec.reference = {
               'driver_url' => driver_url,
               'driver_version' => Chef::Provisioning::SshDriver::VERSION,
               'target_name' => machine_spec.name,
-              'ssh_machine_file' => ssh_machine_file_updated,
               'allocated_at' => Time.now.utc.to_s,
-              'updated_at' => Time.now.utc.to_s,
               'host' => action_handler.host_node
             }
-          elsif ssh_machine_file_updated
-            machine_spec.location['updated_at'] = Time.now.utc.to_s
           end
+          
+          update_ssh_machine(action_handler, machine_spec, ssh_machine_options)
 
-          if machine_spec.location && (machine_spec.location['driver_version'] != Chef::Provisioning::SshDriver::VERSION)
-            machine_spec.location['driver_version'] = Chef::Provisioning::SshDriver::VERSION
+          if machine_spec.reference && 
+            (machine_spec.reference['driver_version'] != Chef::Provisioning::SshDriver::VERSION)
+            machine_spec.reference['driver_version'] = Chef::Provisioning::SshDriver::VERSION
           end
-
         end
 
         def ready_machine(action_handler, machine_spec, machine_options)
           ssh_machine = existing_ssh_machine_to_sym(machine_spec)
 
-          if !ssh_machine
-            raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
+          unless ssh_machine
+            raise "SSH Machine #{machine_spec.name} does not have machine options associated with it!"
           end
 
           wait_for_transport(action_handler, ssh_machine, machine_spec, machine_options)
@@ -83,25 +90,25 @@ class Chef
         def destroy_machine(action_handler, machine_spec, machine_options)
           ssh_machine = ssh_machine_exists?(machine_spec)
 
-          if !ssh_machine || !::File.exists?(machine_spec.location['ssh_machine_file'])
-            raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
-	  else
+          unless ssh_machine
+            raise "SSH Machine #{machine_spec.name} does not have machine options associated with it!"
+          end
+          
+          unless use_chef_store
             Chef::Provisioning.inline_resource(action_handler) do
-	      file machine_spec.location['ssh_machine_file'] do
-		action :delete
-		backup false
-	      end
-	    end 
-	  end
-
-
+              file machine_spec.reference['ssh_machine_file'] do
+                action :delete
+                backup false
+              end
+            end
+          end 
         end
 
         def stop_machine(action_handler, machine_spec, machine_options)
           ssh_machine = existing_ssh_machine_to_sym(machine_spec)
 
-          if !ssh_machine
-            raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
+          unless ssh_machine && machine_spec.reference['machine_options']
+            raise "SSH Machine #{machine_spec.name} does not have machine options associated with it!"
           end
 
           action_handler.report_progress("SSH Machine #{machine_spec.name} is existing hardware login and power off.")
@@ -110,8 +117,8 @@ class Chef
         def machine_for(machine_spec, machine_options)
           ssh_machine = existing_ssh_machine_to_sym(machine_spec)
 
-          if !ssh_machine
-            raise "SSH Machine #{machine_spec.name} does not have a machine file associated with it!"
+          unless ssh_machine
+            raise "SSH Machine #{machine_spec.name} does not have machine options associated with it!"
           end
 
           if ssh_machine[:transport_options][:is_windows]
@@ -189,65 +196,65 @@ class Chef
           end
         end
 
+        def validate_transport_fields(options, req_fields, opt_fields)
+          error_msgs = []
+          valid_fields = req_fields.flatten + opt_fields
+          one_of_fields = req_fields.select{ |i| i.kind_of?(Array)}
+
+          missing = req_fields.flatten - options.keys
+
+          one_of_fields.each do |oof|
+            if oof == oof & missing
+              error_msgs << ":transport_options => :#{oof.join(" or :")} required."
+            end
+            missing -= oof
+          end
+
+          missing.each do |missed|
+            error_msgs << ":transport_options => :#{missed} required."
+            valid = false
+          end
+
+          extras = options.keys - valid_fields
+
+          extras.each do |extra|
+            error_msgs << ":transport_options => :#{extra} not allowed."
+            valid = false
+          end
+          
+          error_msgs
+        end
+        
         def validate_machine_options(action_handler, machine_spec, machine_options)
           error_msgs = []
           valid = true
-
-          if !machine_options[:transport_options]
+          
+          unless machine_options[:transport_options]
             error_msgs << ":transport_options required."
             valid = false
           else
             if machine_options[:transport_options][:is_windows]
               # Validate Windows Options.
-              req_and_valid_fields = [:is_windows, [:host, :ip_address], :username, :password]
-              one_of_fields = req_and_valid_fields.select{ |i| i.kind_of?(Array)}
-
-              missing = req_and_valid_fields.flatten - machine_options[:transport_options].keys
-
-              one_of_fields.each do |oof|
-                if oof == oof & missing
-                  error_msgs << ":transport_options => :#{oof.join(" or :")} required."
-                end
-                missing -= oof
-              end
-
-              missing.each do |missed|
-                error_msgs << ":transport_options => :#{missed} required."
+              field_errors = validate_transport_fields(
+                machine_options[:transport_options],
+                [:is_windows, [:host, :ip_address], :username, :password], 
+                [:port]
+              )
+              unless field_errors.empty?
                 valid = false
-              end
-
-              extras = machine_options[:transport_options].keys - req_and_valid_fields.flatten
-
-              extras.each do |extra|
-                error_msgs << ":transport_options => :#{extra} not allowed." unless extra == :port
-                valid = false
+                error_msgs << field_errors
               end
             else
               # Validate Unix Options
-              req_fields = [[:host, :hostname, :ip_address], :username]
-              one_of_fields = req_fields.select{ |i| i.kind_of?(Array)}
-
-              missing = req_fields.flatten - machine_options[:transport_options].keys
-
-              one_of_fields.each do |oof|
-                if oof == oof & missing
-                  error_msgs << ":transport_options => :#{oof.join(" or :")} required."
-                end
-                missing -= oof
-              end
-
-              missing.each do |missed|
-                error_msgs << ":transport_options => :#{missed} required."
+              field_errors = validate_transport_fields(
+                machine_options[:transport_options],
+                [[:host, :hostname, :ip_address], :username], 
+                [:is_windows, :host, :hostname, :ip_address, :username, :ssh_options, :options]
+              )
+              
+              unless field_errors.empty?
                 valid = false
-              end
-
-              valid_fields = [:is_windows, :host, :hostname, :ip_address, :username, :ssh_options, :options]
-
-              extras = machine_options[:transport_options].keys - valid_fields
-
-              extras.each do |extra|
-                error_msgs << ":transport_options => :#{extra} not allowed."
-                valid = false
+                error_msgs << field_errors
               end
 
               if machine_options[:transport_options][:ssh_options]
@@ -292,42 +299,14 @@ class Chef
           end
         end
 
-        def create_machine(action_handler, machine_spec, machine_options)
+        def create_machine_file(action_handler, machine_spec, machine_options_hash)
           ensure_ssh_cluster(action_handler)
 
-          machine_options_hash_for_sym = deep_hashify(machine_options)
-          symbolized_machine_options   = symbolize_keys(machine_options_hash_for_sym)
-          validate_machine_options(action_handler, machine_spec, symbolized_machine_options)
-          # end
-
-
-          # def create_ssh_machine(action_handler, machine_spec, machine_options)
-          log_info("File is = #{ssh_machine_file(machine_spec)}")
-          log_info("current_machine_options = #{machine_options.to_s}")
-
-          machine_options_hash_for_s = deep_hashify(machine_options)
-          stringy_machine_options    = stringify_keys(machine_options_hash_for_s)
-          given_machine_options      = create_machine_hash(stringy_machine_options)
-
-          if ssh_machine_exists?(machine_spec)
-            existing_machine_hash = existing_ssh_machine(machine_spec)
-            if !existing_machine_hash.eql?(given_machine_options)
-              create_machine_file(action_handler, machine_spec, given_machine_options)
-            else
-              return false
-            end
-          else
-            file_updated = create_machine_file(action_handler, machine_spec, given_machine_options)
-            file_updated
-          end
-        end
-
-        def create_machine_file(action_handler, machine_spec, machine_options)
           file_path = ssh_machine_file(machine_spec)
-          machine_options_hash = deep_hashify(machine_options)
           stringy_machine_options = stringify_keys(machine_options_hash)
           options_parsed = ::JSON.parse(stringy_machine_options.to_json)
           json_machine_options = ::JSON.pretty_generate(options_parsed)
+          log_info("File is = #{file_path}")
           Chef::Provisioning.inline_resource(action_handler) do
             file file_path do
               content json_machine_options
@@ -347,11 +326,14 @@ class Chef
         end
 
         def existing_ssh_machine(machine_spec)
-          if ssh_machine_exists?(machine_spec)
-            existing_machine_hash = JSON.parse(File.read(ssh_machine_file(machine_spec)))
-            existing_machine_hash.to_hash
-          else
+          unless ssh_machine_exists?(machine_spec)
             return {}
+          end
+          
+          if use_chef_store
+            machine_spec.reference['machine_options']
+          else
+            JSON.parse(File.read(ssh_machine_file(machine_spec))).to_hash
           end
         end
 
@@ -365,19 +347,44 @@ class Chef
         end
 
         def ssh_machine_exists?(machine_spec)
-          if machine_spec.location
-            ::File.exists?(ssh_machine_file(machine_spec))
+          if use_chef_store
+            machine_spec.reference && machine_spec.reference['machine_options']
           else
-            false
+            machine_spec.reference && ::File.exists?(ssh_machine_file(machine_spec))
           end
         end
 
         def ssh_machine_file(machine_spec)
-          if machine_spec.location && machine_spec.location['ssh_machine_file']
-            machine_spec.location['ssh_machine_file']
+          if machine_spec.reference && machine_spec.reference['ssh_machine_file']
+            machine_spec.reference['ssh_machine_file']
           else
             ssh_machine_file = ::File.join(@cluster_path, "#{machine_spec.name}.json")
             ssh_machine_file
+          end
+        end
+
+        def prepare_machine_options(action_handler, machine_spec, machine_options)
+          options_hash = symbolize_keys(deep_hashify(machine_options))
+          
+          # if no transport options are specified, use the existing ones
+          unless options_hash[:transport_options]
+            ssh_machine = existing_ssh_machine_to_sym(machine_spec) || {}
+            options_hash[:transport_options] = ssh_machine[:transport_options]  || {}
+          end
+          
+          validate_machine_options(action_handler, machine_spec, options_hash)
+          create_machine_hash(stringify_keys(options_hash))
+        end
+        
+        def update_ssh_machine(action_handler, machine_spec, ssh_machine_options)
+          unless existing_ssh_machine(machine_spec).eql? ssh_machine_options
+            if use_chef_store
+              machine_spec.reference['machine_options'] = ssh_machine_options
+            else
+              machine_spec.reference['ssh_machine_file'] = 
+                create_machine_file(action_handler, machine_spec, ssh_machine_options)
+            end
+            machine_spec.reference['updated_at'] = Time.now.utc.to_s
           end
         end
 
@@ -441,8 +448,6 @@ class Chef
 
           raise 'Host is not a Valid IP or Resolvable Hostname' unless ( valid_ip || in_hosts_file || in_dns )
         end
-
-
       end
     end
   end

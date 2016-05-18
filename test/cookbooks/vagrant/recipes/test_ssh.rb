@@ -12,7 +12,6 @@ require 'chef/provisioning/ssh_driver'
 #       })
 
 # with_ssh_cluster "/home/js4/metal/chef-metal/docs/examples/drivers/ssh"
-# with_driver 'ssh
 with_driver 'ssh'
 
 machine "sshone" do
@@ -23,7 +22,10 @@ machine "sshone" do
     :username => 'vagrant',
     'ssh_options' => {
       #:password => 'vagrant'
-      :keys => ['/home/vagrant/.ssh/id_rsa']
+      
+      #:keys => ['/home/vagrant/.ssh/id_rsa']
+      :keys => ['~/.vagrant.d/insecure_private_key']
+
     },
     'options' => {
       'ssh_pty_enable' => true
@@ -47,10 +49,12 @@ end
 #                      :client_name => Chef::Config[:node_name],
 #                      :signing_key_filename => Chef::Config[:client_key]
 
+with_driver 'ssh:chef'
+
 machine "sshtwo" do
   # action :destroy
   action [:ready, :setup, :converge]
-  machine_options :transport_options => {
+  machine_options 'transport_options' => {
     :ip_address => '192.168.33.123',
     'username' => 'vagrant',
     :ssh_options => {

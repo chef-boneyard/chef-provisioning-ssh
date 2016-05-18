@@ -16,9 +16,9 @@ require 'chef/provisioning/ssh_driver'
 
 with_driver 'ssh'
 
-with_chef_server "https://api.opscode.com/organizations/zzondlo",
-  :client_name => Chef::Config[:node_name],
-  :signing_key_filename => Chef::Config[:client_key]
+# with_chef_server "https://api.opscode.com/organizations/zzondlo",
+#  :client_name => Chef::Config[:node_name],
+#  :signing_key_filename => Chef::Config[:client_key]
 
 machine "winone" do
   # action :destroy
@@ -27,8 +27,8 @@ machine "winone" do
     'is_windows' => true,
     'host' => '192.168.33.100',
     'username' => 'vagrant',
-    'password' => 'vagrant'
-    # 'port' => 5985
+    'password' => 'vagrant',
+    'port' => 5985
   }
   recipe 'windows'
   converge true
