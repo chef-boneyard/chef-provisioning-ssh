@@ -20,9 +20,9 @@ Gem::Specification.new do |s|
   s.files = %w(Rakefile LICENSE README.md Gemfile) + Dir.glob("*.gemspec") +
       Dir.glob("{distro,lib,tasks,spec}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
-  s.add_runtime_dependency 'chef-provisioning', "~> 1.0"
+  s.add_runtime_dependency "chef-provisioning", ">= 1.0", "< 3.0"
 
   s.add_development_dependency "bundler", "~> 1.5"
-  s.add_development_dependency "rspec",  "~> 0"
-  s.add_development_dependency "rake",  "~> 0"
+  s.add_development_dependency "rspec"
+  s.add_development_dependency "rake"
 end
