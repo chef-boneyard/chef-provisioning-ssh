@@ -179,13 +179,17 @@ To test it out, clone the repo:
 
 `git clone https://github.com/chef/chef-provisioning-ssh.git`
 
-in the test directory there is a Vagrantfile with 2 nodes.
+in the test directory there is a Vagrantfile with 3 nodes.
 
 Run:
 
 `vagrant up`
 
-which will bring up both nodes.
+which will bring up all of the test nodes.
+
+Next, add the vagrant key to your ssh agent, this is used to authenticate to the third node:
+
+`ssh-add ~/.vagrant.d/insecure_private_key`
 
 Then run from the test directory:
 
@@ -193,7 +197,7 @@ Then run from the test directory:
 
 NOTE: if the first machine fails it will likely be a result of issues with your vagrant key.
 
-This will run chef-provisioning on each of the two vagrant nodes.
+This will run chef-provisioning on each of the three vagrant nodes.
 
 thats it.
 
