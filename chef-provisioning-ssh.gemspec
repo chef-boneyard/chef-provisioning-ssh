@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "chef-provisioning", ">= 1.0", "< 3.0"
 
-  s.add_development_dependency "bundler", "~> 1.5"
+  s.add_development_dependency "bundler", "~> 2.0"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rake"
 end
