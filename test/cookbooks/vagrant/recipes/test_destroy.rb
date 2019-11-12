@@ -25,3 +25,12 @@ end
 machine "sshtwo" do
   action :destroy
 end
+
+machine "sshthree" do
+  run_list [ 'recipe[vagrant::sshthree_2]' ]
+  action :converge
+end
+
+machine "sshthree" do
+  action :destroy
+end

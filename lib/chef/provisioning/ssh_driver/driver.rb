@@ -414,14 +414,16 @@ class Chef
               keys = ssh_hash['keys'] || false
               key_data = ssh_hash['key_data'] || false
               password = ssh_hash['password'] || false
+              agent = ssh_hash['use_agent'] || false
               has_either = ((password && password.kind_of?(String)) ||
                             (keys && !keys.empty? && keys.kind_of?(Array)) ||
-                            (key_data && !key_data.empty? && key_data.kind_of?(Array)))
+                            (key_data && !key_data.empty? && key_data.kind_of?(Array)) ||
+                            agent)
             else
               has_either = false
             end
           end
-          raise 'No Keys OR Password, No Can Do Compadre' unless has_either
+          raise 'No Keys, Password, or SSH Agent configured' unless has_either
           has_either
         end
 
