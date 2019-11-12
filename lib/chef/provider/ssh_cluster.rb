@@ -4,6 +4,7 @@ require 'cheffish'
 class Chef::Provider::SshCluster < Chef::Provider::LWRPBase
 
   use_inline_resources
+  provides :ssh_cluster
 
   def whyrun_supported?
     true
